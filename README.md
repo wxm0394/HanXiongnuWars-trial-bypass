@@ -1,51 +1,45 @@
-# HanXiongnuWars Trial Bypass
+# Warband Engine (Gloria Sinica) - Trial Limitation & Wine Fix
 
-《戎马丹心：汉匈决战》（Gloria Sinica: Han Xiongnu Wars）Wine/Linux 试用模式破解补丁。
+Binary patch documentation and executable fix for Mount & Blade Warband engine standalone titles (specifically *Gloria Sinica: Han Xiongnu Wars* v2.725) running under Wine / Proton on Linux.
 
-## 问题
+## Problem Description
 
-汉匈决战基于战团引擎（Warband Engine 0.910），启动时会弹出序列号验证窗口，试用模式下角色等级被限制在 8 级。
+Standalone titles running on older Mount & Blade engine revisions (such as Engine v0.910) fail to find native Windows registry keys when executed via Wine, causing:
+1. Blocking modal activation / serial key dialog at startup.
+2. Hardcoded trial-mode level cap enforced at Level 8 (triggers an automated save-and-exit sequence).
 
-## 补丁内容
+## Binary Modifications
 
-对 `HanXiongnuWars.exe`（v2.725）进行了以下二进制补丁：
+Direct PE patches applied to `HanXiongnuWars.exe` (v2.725) targeting the global activation flag conditional branches (`0x8eb5a0` in `.data`):
 
-| # | 文件偏移 | 原始字节 | 补丁字节 | 说明 |
-|---|---------|---------|---------|------|
-| 1 | `0x207067` | `0f 85 80 00 00 00` | `90 e9 80 00 00 00` | 等级上限弹窗 `jnz` → 无条件跳转 |
-| 2 | `0x207e3b` | `74 4e` | `90 90` | 试用模式菜单检测 `jz` → NOP |
-| 3 | `0x1b5e93` | `0f 84 69 01 00 00` | `90 90 90 90 90 90` | 试用模式长跳转 → NOP |
-| 4 | `0x18b455` | `74 07` | `90 90` | 序列号验证条件跳转 A → NOP |
-| 5 | `0x18deab` | `74 07` | `90 90` | 序列号验证条件跳转 B → NOP |
-| 6 | `0x1bf51c` | `0f 85 85 0a 00 00` | `90 e9 85 0a 00 00` | 启动序列号弹窗 `jnz` → 无条件跳转 |
+| # | File Offset | Original Bytes | Patched Bytes | Description |
+|---|-------------|----------------|---------------|-------------|
+| 1 | `0x207067` | `0f 85 80 00 00 00` | `90 e9 80 00 00 00` | Level limit check: `jnz` -> unconditional `jmp` |
+| 2 | `0x207e3b` | `74 4e` | `90 90` | Trial menu branch: `jz` -> NOP sled |
+| 3 | `0x1b5e93` | `0f 84 69 01 00 00` | `90 90 90 90 90 90` | Trial mode long jump -> NOP |
+| 4 | `0x18b455` | `74 07` | `90 90` | Serial verification branch A -> NOP |
+| 5 | `0x18deab` | `74 07` | `90 90` | Serial verification branch B -> NOP |
+| 6 | `0x1bf51c` | `0f 85 85 0a 00 00` | `90 e9 85 0a 00 00` | Startup activation modal: `jnz` -> unconditional `jmp` |
 
-所有补丁均针对激活标志位 `0x8eb5a0`（`.data` 段全局变量）的条件分支。
-
-## 使用方法
+## Usage
 
 ```bash
-# 备份原始文件
+# Backup original binary
 cp HanXiongnuWars.exe HanXiongnuWars.exe.bak
 
-# 用补丁文件替换
-cp patch/HanXiongnuWars.exe /path/to/Gloria\ Sinica\ Han\ Xiongnu\ Wars/HanXiongnuWars.exe
+# Replace with patched binary
+cp patch/HanXiongnuWars.exe /path/to/game/directory/HanXiongnuWars.exe
 
-# 启动游戏
-cd "/path/to/Gloria Sinica Han Xiongnu Wars/"
+# Launch via Wine
 wine HanXiongnuWars.exe
 ```
 
-## 效果
+## Results
 
-- ✅ 启动时不再弹出序列号验证窗口
-- ✅ 角色等级突破 8 级限制，可自由升级
-- ✅ 游戏其他功能（战斗、菜单、存档）完全正常
+- Startup serial prompt bypassed directly to main menu.
+- Character progression beyond level 8 fully unlocked.
+- Compatible with Wine / DXVK 3.x stack on Linux.
 
-## 适用版本
+## Methodology
 
-- 汉匈决战 v2.725（基于 Warband Engine 0.910）
-- 测试环境：Kali Linux + Wine + DXVK 3.0.2 + NVIDIA GTX 1660 SUPER
-
-## 技术细节
-
-详见 [SKILL.md](SKILL.md)，包含完整的逆向工程方法论，可复用于其他战团引擎独立游戏。
+See [SKILL.md](SKILL.md) for reverse-engineering workflow and branch-mapping procedure.
